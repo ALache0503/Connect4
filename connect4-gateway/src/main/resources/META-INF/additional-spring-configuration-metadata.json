@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "security.public-paths",
+      "type": "java.lang.String",
+      "description": "Defines all paths that arent secured."
+    }
+  ]
+}

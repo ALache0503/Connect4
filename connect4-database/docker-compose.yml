@@ -1,0 +1,199 @@
+name: connect4-app
+
+services:
+  gateway-service:
+    image: connect4-gateway:latest
+    environment:
+      # HTTP Services
+      SERVICES_SECURITY_URL: http://security-service:9001
+      SERVICES_STATISTICS_URL: http://statistics-service:9005
+      SERVICES_MATCHMAKING_URL: http://matchmaking-service:9002
+      SERVICES_GAMING_URL: http://gaming-service:9003
+      SERVICES_CHAT_URL: http://chat-service:9006
+      SERVICES_FRIENDLIST_URL: http://friendlist-service:9004
+
+      # WebSocket Services
+      SERVICES_MATCHMAKING_WEBSOCKET_URL: ws://matchmaking-service:9002/ws
+      SERVICES_GAMING_WEBSOCKET_URL: ws://gaming-service:9003/ws
+      SERVICES_CHAT_WEBSOCKET_URL: ws://chat-service:9006/ws
+      SERVICES_FRIENDLIST_WEBSOCKET_URL: ws://friendlist-service:9004/ws
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    ports:
+      - "8080:8080"
+    networks:
+      - app
+  db:
+    image: connect4-database:latest
+    ports:
+      - "5432:5432"
+    networks:
+      - app
+  
+  rabbit-mq:
+    image: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  security-service:
+    image: connect4-security:latest
+    ports:
+      - "9001:9001"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/connect4
+      SPRING_RABBITMQ_HOST: rabbit-mq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      db:
+        condition: service_started
+      rabbit-mq:
+        condition: service_healthy
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+
+
+  statistics-service:
+    image: connect4-statistics:latest
+    ports:
+      - "9005:9005"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/connect4
+      SPRING_RABBITMQ_HOST: rabbit-mq
+      SPRING_RABBITMQ_PORT: 5672
+      SERVICES_SECURITY_SERVICE_URL: http://security-service:9001
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      db:
+        condition: service_started
+      rabbit-mq:
+        condition: service_healthy
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+
+  gaming-service:
+    image: connect4-gaming:latest
+    ports:
+      - "9003:9003"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbit-mq
+      SPRING_RABBITMQ_PORT: 5672
+      SERVICES_SECURITY-SERVICE_URL: http://security-service:9001
+      SERVICES_BOT-SERVICE_URL: http://bot-service:9007
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      rabbit-mq:
+        condition: service_healthy
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+  
+  matchmaking-service:
+    image: connect4-matchmaking:latest
+    ports:
+      - "9002:9002"
+    environment:
+      # HTTP Services
+      SERVICES_SECURITY-SERVICE_URL: http://security-service:9001
+      SERVICES_STATISTICS_URL: http://statistics-service:9005
+      SERVICES_MATCHMAKING_URL: http://matchmaking-service:9002
+      SERVICES_GAMING-SERVICE_URL: http://gaming-service:9003
+      SERVICES_CHAT_URL: http://chat-service:9006
+      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:*,http://gateway-service:*,http://host.docker.internal:*
+
+      # WebSocket Services
+      SERVICES_MATCHMAKING_WEBSOCKET_URL: ws://matchmaking-service:9002/ws
+      SERVICES_GAMING_WEBSOCKET_URL: ws://gaming-service:9003/ws
+      SERVICES_CHAT_WEBSOCKET_URL: ws://chat-service:9006/ws
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+
+  chat-service:
+    image: connect4-chat:latest
+    ports:
+      - "9006:9006"
+    environment:
+      SERVICES_SECURITY_SERVICE_URL: http://security-service:9001
+      SERVICES_GAMING_SERVICE_URL: http://gaming-service:9003
+      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:*,http://gateway-service:*,http://host.docker.internal:*
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+
+  frontend:
+    image: connect4-frontend:latest
+    ports:
+      - "5173:5173"
+    depends_on:
+      gateway-service:
+        condition: service_started
+      rabbit-mq:
+        condition: service_healthy
+      db:
+        condition: service_started
+      statistics-service:
+        condition: service_started
+      matchmaking-service:
+        condition: service_started
+      gaming-service:
+        condition: service_started
+      security-service:
+        condition: service_started
+    networks:
+      - app
+  
+  bot-service:
+    image: connect4-bot:latest
+    ports:
+      - "9007:9007"
+    environment:
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      gateway-service:
+        condition: service_started
+    networks:
+      - app
+
+  friendlist-service:
+    image: connect4-friendlist:latest
+    ports:
+      - "9004:9004"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/connect4
+      SERVICES_SECURITY-SERVICE_URL: http://security-service:9001
+      JWT_SECRET: 76e8b4800d91ac3a6646063b9ec43cc209f8536c738d9ff5030813af3580a126
+      JWT_EXPIRATION: 900
+    depends_on:
+      gateway-service:
+        condition: service_started
+      db:
+        condition: service_started
+    networks:
+      - app
+networks:
+  app:
+    driver: bridge

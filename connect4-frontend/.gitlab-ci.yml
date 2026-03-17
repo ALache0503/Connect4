@@ -1,0 +1,13 @@
+stages:
+  - install
+  - build
+
+install:
+  image: node:20-alpine
+  script:
+    - npm install
+
+build:
+  image: node:20-alpine
+  script:
+    - npm run build

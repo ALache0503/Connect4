@@ -1,0 +1,3 @@
+rootProject.name = 'connect4-statistics'
+
+includeBuild '../connect4-common'

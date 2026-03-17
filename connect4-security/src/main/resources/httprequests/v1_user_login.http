@@ -1,0 +1,12 @@
+POST localhost:9001/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "peter",
+  "password": "1234"
+}
+
+> {%
+    client.global.set("access_token", response.header["set-cookie"][0].match("ACCESS_TOKEN=([^;]+)")[1])
+    client.global.set("refresh_token", response.header["set-cookie"][0].match("REFRESH_TOKEN=([^;]+)")[1])
+%}

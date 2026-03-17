@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.Integer",
+      "description": "JWT Token Expiration Time in Seconds"
+    }
+  ]
+}

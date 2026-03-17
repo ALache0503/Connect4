@@ -1,0 +1,3 @@
+rootProject.name = 'connect4-chat'
+
+includeBuild '../connect4-common'

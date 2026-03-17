@@ -1,0 +1,3 @@
+rootProject.name = 'connect4-gateway'
+
+includeBuild '../connect4-common'
