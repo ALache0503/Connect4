@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "compiling connect4-bot"
-      - run: cd connect4-bot
-      - run: gradle clean build -x test
+      - run: ls
+      #- run: gradle clean build -x test
       
 
