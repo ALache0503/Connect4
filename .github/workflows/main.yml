@@ -1,11 +1,25 @@
 name: CI
 on: push
 jobs:
-  Build_Bot:
+  build-all-java:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [connect4-common, connect4-chat, connect4-bot, connect4-friendlist, connect4-gaming, connect4-gateway, connect4-matchmaking,
+          connect4-security, connect4-statistics]
+    
+    defaults:
+      run:
+        working-directory: ./${{ matrix.project }}
+
     steps:
-      - run: echo "compiling connect4-bot"
-      - run: ls -l
-      #- run: gradle clean build -x test
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.project }} with Gradle
+        run: ./gradlew clean build -x test
       
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact-${{ matrix.project }}
+          path: ./${{ matrix.project }}/build/libs/*.jar
 
